@@ -2,73 +2,118 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Sandboxels Mod Constructor</title>
+<title>Sandboxels Mod Constructor v2</title>
 <style>
     * { box-sizing: border-box; }
     body {
-        font-family: system-ui, sans-serif;
+        font-family: system-ui, -apple-system, sans-serif;
         background: #1e1e2e;
         color: #e0e0e0;
         margin: 0;
         padding: 20px;
+        font-size: 14px;
     }
-    h1 { color: #89b4fa; margin-top: 0; }
+    h1 { color: #89b4fa; margin: 0 0 16px; font-size: 22px; }
+    h2 { color: #cba6f7; font-size: 16px; margin: 16px 0 8px; }
+    h3 { color: #94e2d5; font-size: 14px; margin: 12px 0 6px; }
+
     .container {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
+    }
+    @media (max-width: 900px) {
+        .container { grid-template-columns: 1fr; }
     }
     .panel {
         background: #2a2a3e;
         border-radius: 8px;
         padding: 16px;
+        overflow-y: auto;
+        max-height: 90vh;
     }
     label {
         display: block;
-        margin-top: 12px;
+        margin-top: 10px;
         margin-bottom: 4px;
-        font-size: 14px;
+        font-size: 13px;
         color: #a6adc8;
     }
     input[type="text"], input[type="number"], select, textarea {
         width: 100%;
-        padding: 8px;
+        padding: 7px;
         background: #1e1e2e;
         border: 1px solid #45475a;
         border-radius: 4px;
         color: #e0e0e0;
         font-family: inherit;
+        font-size: 13px;
+    }
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #89b4fa;
     }
     input[type="color"] {
-        width: 60px;
-        height: 36px;
+        width: 50px;
+        height: 32px;
         border: none;
         background: none;
         cursor: pointer;
+        padding: 0;
     }
     button {
         background: #89b4fa;
         color: #1e1e2e;
         border: none;
-        padding: 8px 14px;
+        padding: 7px 12px;
         border-radius: 4px;
         cursor: pointer;
         font-weight: 600;
-        margin-top: 8px;
+        font-size: 13px;
+        margin-top: 6px;
+        transition: background 0.15s;
     }
     button:hover { background: #b4befe; }
-    button.danger { background: #f38ba8; }
+    button.danger { background: #f38ba8; padding: 7px 10px; }
     button.danger:hover { background: #eba0ac; }
+    button.secondary { background: #45475a; color: #e0e0e0; }
+    button.secondary:hover { background: #585b70; }
     button.download {
         background: #a6e3a1;
         width: 100%;
         padding: 12px;
-        font-size: 16px;
-        margin-top: 20px;
+        font-size: 15px;
+        margin-top: 16px;
     }
-    .color-row {
+    button.download:hover { background: #94e2d5; }
+
+    .tabs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+        align-items: center;
+    }
+    .tab {
+        background: #45475a;
+        color: #e0e0e0;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        border: 2px solid transparent;
+        margin: 0;
+    }
+    .tab.active {
+        background: #89b4fa;
+        color: #1e1e2e;
+        border-color: #b4befe;
+    }
+    .tab.has-error { border-color: #f38ba8; }
+
+    .color-row, .reaction-row, .behavior-row {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -78,9 +123,12 @@
         background: #1e1e2e;
         padding: 10px;
         border-radius: 4px;
-        margin-bottom: 8px;
+        flex-direction: column;
+        align-items: stretch;
     }
-    .reaction-row input { margin-bottom: 6px; }
+    .reaction-row label { margin-top: 4px; }
+    .behavior-row select { flex: 1; }
+
     pre {
         background: #11111b;
         padding: 12px;
@@ -88,234 +136,721 @@
         overflow-x: auto;
         font-size: 12px;
         color: #a6e3a1;
-        max-height: 600px;
+        max-height: 70vh;
+        line-height: 1.5;
+        margin: 0;
     }
     .toggle-group {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         margin-top: 6px;
     }
     .toggle-group button {
         flex: 1;
         background: #45475a;
         color: #e0e0e0;
+        margin: 0;
     }
     .toggle-group button.active {
         background: #89b4fa;
         color: #1e1e2e;
     }
+    .error {
+        color: #f38ba8;
+        font-size: 12px;
+        margin-top: 4px;
+        min-height: 16px;
+    }
+    .success {
+        color: #a6e3a1;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+    .row-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .row-actions button { flex: 1; margin: 0; }
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .checkbox-row input { width: auto; }
+    .checkbox-row label { margin: 0; }
 </style>
 </head>
 <body>
 
-<h1>🧪 Sandboxels Mod Constructor</h1>
+<h1>🧪 Sandboxels Mod Constructor v2</h1>
 
 <div class="container">
-    <!-- ЛЕВАЯ ПАНЕЛЬ: форма -->
+    <!-- ЛЕВАЯ ПАНЕЛЬ -->
     <div class="panel">
-        <h2>Свойства элемента</h2>
+        <div class="tabs" id="tabs"></div>
+        <button onclick="addElement()">+ Новый элемент</button>
 
-        <label>Имя элемента (латиницей, без пробелов)</label>
-        <input type="text" id="elemName" value="my_element" placeholder="my_element">
+        <div id="editor"></div>
 
-        <label>Категория</label>
-        <select id="elemCategory">
-            <option value="land">land</option>
-            <option value="liquids">liquids</option>
-            <option value="gases">gases</option>
-            <option value="powders">powders</option>
-            <option value="solids">solids</option>
-            <option value="special">special</option>
-            <option value="machines">machines</option>
-            <option value="tools">tools</option>
-            <option value="weapons">weapons</option>
-            <option value="life">life</option>
-        </select>
-
-        <label>Состояние (state)</label>
-        <select id="elemState">
-            <option value="solid">solid</option>
-            <option value="liquid">liquid</option>
-            <option value="gas">gas</option>
-        </select>
-
-        <label>Поведение (behavior)</label>
-        <select id="elemBehavior">
-            <option value="POWDER">POWDER</option>
-            <option value="LIQUID">LIQUID</option>
-            <option value="GAS">GAS</option>
-            <option value="WALL">WALL</option>
-            <option value="SUPPORT">SUPPORT</option>
-            <option value="STURDYPOWDER">STURDYPOWDER</option>
-            <option value="MUD">MUD</option>
-            <option value="CLIMB">CLIMB</option>
-            <option value="SAND">SAND</option>
-            <option value="SANDLIKE">SANDLIKE</option>
-            <option value="none">none</option>
-        </select>
-
-        <label>Описание (desc)</label>
-        <textarea id="elemDesc" rows="2">A custom element.</textarea>
-
-        <h3>🎨 Цвет</h3>
-        <div class="toggle-group">
-            <button id="colorModeSingle" class="active" onclick="setColorMode('single')">Один цвет</button>
-            <button id="colorModeArray" onclick="setColorMode('array')">Массив цветов</button>
+        <div class="row-actions">
+            <button class="secondary" onclick="exportJSON()">📤 Экспорт проекта</button>
+            <button class="secondary" onclick="document.getElementById('importFile').click()">📥 Импорт</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
         </div>
 
-        <div id="singleColorBlock">
-            <label>Цвет</label>
-            <input type="color" id="elemColor" value="#ff0000">
-        </div>
-
-        <div id="arrayColorBlock" style="display:none;">
-            <label>Цвета (каждый добавляется как отдельный оттенок)</label>
-            <div id="colorsList"></div>
-            <button onclick="addColor()">+ Добавить цвет</button>
-        </div>
-
-        <h3>🌡️ Температурные переходы</h3>
-
-        <label>tempHigh (нагрев выше)</label>
-        <input type="number" id="tempHigh" value="1000">
-
-        <label>stateHigh (во что превращается)</label>
-        <input type="text" id="stateHigh" value="molten_glass">
-
-        <label>tempLow (охлаждение ниже)</label>
-        <input type="number" id="tempLow" value="-50">
-
-        <label>stateLow (во что превращается)</label>
-        <input type="text" id="stateLow" value="ice">
-
-        <h3>⚗️ Реакции</h3>
-        <div id="reactionsList"></div>
-        <button onclick="addReaction()">+ Добавить реакцию</button>
+        <div id="globalError" class="error"></div>
 
         <button class="download" onclick="downloadMod()">💾 Скачать мод (.js)</button>
+        <button class="secondary" style="width:100%;margin-top:8px;" onclick="copyCode()">📋 Копировать код</button>
     </div>
 
-    <!-- ПРАВАЯ ПАНЕЛЬ: предпросмотр -->
+    <!-- ПРАВАЯ ПАНЕЛЬ -->
     <div class="panel">
         <h2>Предпросмотр кода</h2>
         <pre id="preview">// Здесь появится код мода</pre>
+        <div id="copyStatus" class="success"></div>
     </div>
 </div>
 
 <script>
-// ===== СОСТОЯНИЕ =====
-let colorMode = 'single';
-let colors = ['#ff0000'];
-let reactions = [];
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+let elementsList = [];
+let activeIndex = 0;
 
-// ===== ЦВЕТ =====
+const BEHAVIORS = [
+    'POWDER', 'LIQUID', 'GAS', 'WALL', 'SUPPORT', 'STURDYPOWDER',
+    'MUD', 'CLIMB', 'SAND', 'SANDLIKE', 'NONE'
+];
+
+const CATEGORIES = [
+    'land', 'liquids', 'gases', 'powders', 'solids', 'special',
+    'machines', 'tools', 'weapons', 'life', 'food', 'structures'
+];
+
+const STATES = ['solid', 'liquid', 'gas'];
+
+// ============================================================
+// УТИЛИТЫ
+// ============================================================
+function escapeHTML(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeJS(str) {
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n');
+}
+
+function isValidName(name) {
+    return /^[a-z_][a-z0-9_]*$/i.test(name);
+}
+
+// ============================================================
+// УПРАВЛЕНИЕ ЭЛЕМЕНТАМИ
+// ============================================================
+function createDefaultElement() {
+    return {
+        name: 'my_element',
+        category: 'land',
+        state: 'solid',
+        behavior: ['POWDER'],
+        desc: 'A custom element.',
+        colorMode: 'single',
+        color: '#ff0000',
+        colors: ['#ff0000'],
+        colorPattern: [],
+        usePattern: false,
+        reactions: [],
+        tempHigh: 1000,
+        stateHigh: 'molten_glass',
+        tempLow: -50,
+        stateLow: 'ice',
+        // доп. свойства
+        burn: '',
+        burnTime: '',
+        fireColor: '',
+        conduct: false,
+        density: '',
+        hardness: '',
+        breakInto: '',
+        hidden: false
+    };
+}
+
+function addElement() {
+    elementsList.push(createDefaultElement());
+    activeIndex = elementsList.length - 1;
+    renderTabs();
+    renderEditor();
+    updatePreview();
+}
+
+function removeElement(index) {
+    if (elementsList.length === 1) {
+        if (!confirm('Это последний элемент. Удалить и создать пустой?')) return;
+        elementsList[0] = createDefaultElement();
+        activeIndex = 0;
+    } else {
+        if (!confirm('Удалить элемент "' + elementsList[index].name + '"?')) return;
+        elementsList.splice(index, 1);
+        if (activeIndex >= elementsList.length) activeIndex = elementsList.length - 1;
+    }
+    renderTabs();
+    renderEditor();
+    updatePreview();
+}
+
+function switchElement(index) {
+    activeIndex = index;
+    renderTabs();
+    renderEditor();
+}
+
+function updateActive(field, value) {
+    if (!elementsList[activeIndex]) return;
+    elementsList[activeIndex][field] = value;
+    if (field === 'name') renderTabs();
+    updatePreview();
+}
+
+// ============================================================
+// ПРОВЕРКА ОШИБОК
+// ============================================================
+function getElementErrors(el, index) {
+    const errors = [];
+    if (!el.name) errors.push('Имя не указано');
+    else if (!isValidName(el.name)) errors.push('Имя: только латиница, цифры и _');
+    else {
+        const dup = elementsList.findIndex((e, i) => i !== index && e.name === el.name);
+        if (dup !== -1) errors.push('Дубликат имени');
+    }
+    return errors;
+}
+
+// ============================================================
+// РЕНДЕР ВКЛАДОК
+// ============================================================
+function renderTabs() {
+    const tabs = document.getElementById('tabs');
+    tabs.innerHTML = '';
+    elementsList.forEach((el, i) => {
+        const errors = getElementErrors(el, i);
+        const btn = document.createElement('button');
+        btn.className = 'tab' + (i === activeIndex ? ' active' : '') + (errors.length ? ' has-error' : '');
+        btn.textContent = el.name || '(без имени)';
+        btn.onclick = () => switchElement(i);
+        tabs.appendChild(btn);
+    });
+}
+
+// ============================================================
+// РЕНДЕР РЕДАКТОРА
+// ============================================================
+function renderEditor() {
+    const el = elementsList[activeIndex];
+    if (!el) return;
+    const editor = document.getElementById('editor');
+
+    editor.innerHTML = `
+        <h2>Свойства элемента</h2>
+
+        <label>Имя элемента (латиница, цифры, _)</label>
+        <input type="text" id="f_name" value="${escapeHTML(el.name)}">
+        <div id="nameError" class="error"></div>
+
+        <label>Категория</label>
+        <select id="f_category">
+            ${CATEGORIES.map(c => `<option value="${c}"${el.category === c ? ' selected' : ''}>${c}</option>`).join('')}
+        </select>
+
+        <label>Состояние (state)</label>
+        <select id="f_state">
+            ${STATES.map(s => `<option value="${s}"${el.state === s ? ' selected' : ''}>${s}</option>`).join('')}
+        </select>
+
+        <label>Поведение (можно несколько)</label>
+        <div id="behaviorsList"></div>
+        <button class="secondary" onclick="addBehavior()">+ Добавить поведение</button>
+
+        <label>Описание</label>
+        <textarea id="f_desc" rows="2">${escapeHTML(el.desc)}</textarea>
+
+        <h3>🎨 Цвет</h3>
+        <div class="toggle-group">
+            <button class="${el.colorMode === 'single' ? 'active' : ''}" onclick="setColorMode('single')">Один</button>
+            <button class="${el.colorMode === 'array' ? 'active' : ''}" onclick="setColorMode('array')">Массив</button>
+        </div>
+
+        ${el.colorMode === 'single' ? `
+            <label>Цвет</label>
+            <input type="color" id="f_color" value="${el.color}">
+        ` : `
+            <label>Цвета</label>
+            <div id="colorsList"></div>
+            <button class="secondary" onclick="addColor()">+ Добавить цвет</button>
+        `}
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="f_usePattern" ${el.usePattern ? 'checked' : ''}>
+            <label for="f_usePattern">Использовать colorPattern</label>
+        </div>
+
+        ${el.usePattern ? `
+            <label>ColorPattern (цвета узора)</label>
+            <div id="patternsList"></div>
+            <button class="secondary" onclick="addPattern()">+ Добавить цвет узора</button>
+        ` : ''}
+
+        <h3>🌡️ Температурные переходы</h3>
+
+        <label>tempHigh (нагрев выше)</label>
+        <input type="number" id="f_tempHigh" value="${el.tempHigh}">
+
+        <label>stateHigh (во что превращается)</label>
+        <input type="text" id="f_stateHigh" value="${escapeHTML(el.stateHigh)}">
+
+        <label>tempLow (охлаждение ниже)</label>
+        <input type="number" id="f_tempLow" value="${el.tempLow}">
+
+        <label>stateLow (во что превращается)</label>
+        <input type="text" id="f_stateLow" value="${escapeHTML(el.stateLow)}">
+
+        <h3>🔥 Горение</h3>
+        <label>burn (% шанс возгорания, 0–100)</label>
+        <input type="number" id="f_burn" value="${el.burn}" placeholder="оставьте пустым">
+
+        <label>burnTime (сколько горит)</label>
+        <input type="number" id="f_burnTime" value="${el.burnTime}" placeholder="оставьте пустым">
+
+        <label>fireColor (HEX)</label>
+        <input type="text" id="f_fireColor" value="${escapeHTML(el.fireColor)}" placeholder="#ff8800">
+
+        <h3>⚙️ Дополнительно</h3>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="f_conduct" ${el.conduct ? 'checked' : ''}>
+            <label for="f_conduct">conduct (проводит электричество)</label>
+        </div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="f_hidden" ${el.hidden ? 'checked' : ''}>
+            <label for="f_hidden">hidden (скрыт из меню)</label>
+        </div>
+
+        <label>density (плотность)</label>
+        <input type="number" id="f_density" value="${el.density}" placeholder="например 1000">
+
+        <label>hardness (твёрдость, 0–1)</label>
+        <input type="number" id="f_hardness" value="${el.hardness}" step="0.1" placeholder="0.5">
+
+        <label>breakInto (во что превращается при разрушении)</label>
+        <input type="text" id="f_breakInto" value="${escapeHTML(el.breakInto)}" placeholder="например sand">
+
+        <h3>⚗️ Реакции</h3>
+        <div id="reactionsList"></div>
+        <button class="secondary" onclick="addReaction()">+ Добавить реакцию</button>
+
+        <div style="margin-top:20px;">
+            <button class="danger" onclick="removeElement(${activeIndex})">🗑 Удалить элемент</button>
+        </div>
+    `;
+
+    bindInputs();
+    renderBehaviors();
+    if (el.colorMode === 'array') renderColors();
+    if (el.usePattern) renderPatterns();
+    renderReactions();
+    validateName();
+}
+
+// ============================================================
+// ПРИВЯЗКА ПОЛЕЙ
+// ============================================================
+function bindInputs() {
+    const bind = (id, field, transform = v => v) => {
+        const node = document.getElementById(id);
+        if (!node) return;
+        const handler = () => updateActive(field, transform(node.type === 'checkbox' ? node.checked : node.value));
+        node.addEventListener('input', handler);
+        node.addEventListener('change', handler);
+    };
+
+    bind('f_name', 'name');
+    bind('f_category', 'category');
+    bind('f_state', 'state');
+    bind('f_desc', 'desc');
+    bind('f_color', 'color');
+    bind('f_tempHigh', 'tempHigh', v => v === '' ? '' : Number(v));
+    bind('f_stateHigh', 'stateHigh');
+    bind('f_tempLow', 'tempLow', v => v === '' ? '' : Number(v));
+    bind('f_stateLow', 'stateLow');
+    bind('f_burn', 'burn', v => v === '' ? '' : Number(v));
+    bind('f_burnTime', 'burnTime', v => v === '' ? '' : Number(v));
+    bind('f_fireColor', 'fireColor');
+    bind('f_conduct', 'conduct');
+    bind('f_hidden', 'hidden');
+    bind('f_density', 'density', v => v === '' ? '' : Number(v));
+    bind('f_hardness', 'hardness', v => v === '' ? '' : Number(v));
+    bind('f_breakInto', 'breakInto');
+
+    const patternBox = document.getElementById('f_usePattern');
+    if (patternBox) {
+        patternBox.addEventListener('change', () => {
+            updateActive('usePattern', patternBox.checked);
+            renderEditor();
+        });
+    }
+
+    const nameInput = document.getElementById('f_name');
+    if (nameInput) nameInput.addEventListener('input', validateName);
+}
+
+function validateName() {
+    const el = elementsList[activeIndex];
+    const errNode = document.getElementById('nameError');
+    if (!errNode || !el) return;
+    const errors = getElementErrors(el, activeIndex);
+    errNode.textContent = errors.join(' • ');
+    renderTabs();
+}
+
+// ============================================================
+// ПОВЕДЕНИЯ
+// ============================================================
+function addBehavior() {
+    const el = elementsList[activeIndex];
+    el.behavior.push('POWDER');
+    renderBehaviors();
+    updatePreview();
+}
+
+function removeBehavior(index) {
+    const el = elementsList[activeIndex];
+    el.behavior.splice(index, 1);
+    if (el.behavior.length === 0) el.behavior.push('POWDER');
+    renderBehaviors();
+    updatePreview();
+}
+
+function updateBehavior(index, value) {
+    elementsList[activeIndex].behavior[index] = value;
+    updatePreview();
+}
+
+function renderBehaviors() {
+    const el = elementsList[activeIndex];
+    const list = document.getElementById('behaviorsList');
+    if (!list) return;
+    list.innerHTML = '';
+    el.behavior.forEach((b, i) => {
+        const row = document.createElement('div');
+        row.className = 'behavior-row';
+        const select = document.createElement('select');
+        BEHAVIORS.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt;
+            o.textContent = opt;
+            if (opt === b) o.selected = true;
+            select.appendChild(o);
+        });
+        select.addEventListener('change', () => updateBehavior(i, select.value));
+
+        const btn = document.createElement('button');
+        btn.className = 'danger';
+        btn.textContent = '×';
+        btn.onclick = () => removeBehavior(i);
+
+        row.appendChild(select);
+        row.appendChild(btn);
+        list.appendChild(row);
+    });
+}
+
+// ============================================================
+// ЦВЕТА
+// ============================================================
 function setColorMode(mode) {
-    colorMode = mode;
-    document.getElementById('colorModeSingle').classList.toggle('active', mode === 'single');
-    document.getElementById('colorModeArray').classList.toggle('active', mode === 'array');
-    document.getElementById('singleColorBlock').style.display = mode === 'single' ? 'block' : 'none';
-    document.getElementById('arrayColorBlock').style.display = mode === 'array' ? 'block' : 'none';
+    const el = elementsList[activeIndex];
+    el.colorMode = mode;
+    if (mode === 'array' && el.colors.length === 0) el.colors.push('#ffffff');
+    renderEditor();
     updatePreview();
 }
 
 function addColor() {
-    colors.push('#ffffff');
+    elementsList[activeIndex].colors.push('#ffffff');
     renderColors();
     updatePreview();
 }
 
-function removeColor(index) {
-    colors.splice(index, 1);
-    if (colors.length === 0) colors.push('#ffffff');
+function removeColor(i) {
+    const el = elementsList[activeIndex];
+    el.colors.splice(i, 1);
+    if (el.colors.length === 0) el.colors.push('#ffffff');
     renderColors();
+    updatePreview();
+}
+
+function updateColor(i, value) {
+    elementsList[activeIndex].colors[i] = value;
     updatePreview();
 }
 
 function renderColors() {
+    const el = elementsList[activeIndex];
     const list = document.getElementById('colorsList');
+    if (!list) return;
     list.innerHTML = '';
-    colors.forEach((c, i) => {
+    el.colors.forEach((c, i) => {
         const row = document.createElement('div');
         row.className = 'color-row';
-        row.innerHTML = `
-            <input type="color" value="${c}" onchange="colors[${i}] = this.value; updatePreview();">
-            <button class="danger" onclick="removeColor(${i})">×</button>
-        `;
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = c;
+        input.addEventListener('input', () => updateColor(i, input.value));
+        const btn = document.createElement('button');
+        btn.className = 'danger';
+        btn.textContent = '×';
+        btn.onclick = () => removeColor(i);
+        row.appendChild(input);
+        row.appendChild(btn);
         list.appendChild(row);
     });
 }
 
-// ===== РЕАКЦИИ =====
+// ============================================================
+// COLOR PATTERN
+// ============================================================
+function addPattern() {
+    elementsList[activeIndex].colorPattern.push('#ffffff');
+    renderPatterns();
+    updatePreview();
+}
+
+function removePattern(i) {
+    elementsList[activeIndex].colorPattern.splice(i, 1);
+    renderPatterns();
+    updatePreview();
+}
+
+function updatePattern(i, value) {
+    elementsList[activeIndex].colorPattern[i] = value;
+    updatePreview();
+}
+
+function renderPatterns() {
+    const el = elementsList[activeIndex];
+    const list = document.getElementById('patternsList');
+    if (!list) return;
+    list.innerHTML = '';
+    el.colorPattern.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.className = 'color-row';
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = c;
+        input.addEventListener('input', () => updatePattern(i, input.value));
+        const btn = document.createElement('button');
+        btn.className = 'danger';
+        btn.textContent = '×';
+        btn.onclick = () => removePattern(i);
+        row.appendChild(input);
+        row.appendChild(btn);
+        list.appendChild(row);
+    });
+}
+
+// ============================================================
+// РЕАКЦИИ
+// ============================================================
 function addReaction() {
-    reactions.push({ target: 'water', result: 'mud' });
+    elementsList[activeIndex].reactions.push({ target: 'water', result: 'mud', result2: '' });
     renderReactions();
     updatePreview();
 }
 
-function removeReaction(index) {
-    reactions.splice(index, 1);
+function removeReaction(i) {
+    elementsList[activeIndex].reactions.splice(i, 1);
     renderReactions();
+    updatePreview();
+}
+
+function updateReaction(i, field, value) {
+    elementsList[activeIndex].reactions[i][field] = value;
     updatePreview();
 }
 
 function renderReactions() {
+    const el = elementsList[activeIndex];
     const list = document.getElementById('reactionsList');
+    if (!list) return;
     list.innerHTML = '';
-    reactions.forEach((r, i) => {
+    el.reactions.forEach((r, i) => {
         const row = document.createElement('div');
         row.className = 'reaction-row';
-        row.innerHTML = `
-            <label>Реагирует с:</label>
-            <input type="text" value="${r.target}" oninput="reactions[${i}].target = this.value; updatePreview();">
-            <label>Превращается в (elem1):</label>
-            <input type="text" value="${r.result}" oninput="reactions[${i}].result = this.value; updatePreview();">
-            <button class="danger" onclick="removeReaction(${i})">Удалить</button>
-        `;
+
+        const t1 = document.createElement('label');
+        t1.textContent = 'Реагирует с:';
+        const i1 = document.createElement('input');
+        i1.type = 'text';
+        i1.value = r.target;
+        i1.addEventListener('input', () => updateReaction(i, 'target', i1.value));
+
+        const t2 = document.createElement('label');
+        t2.textContent = 'elem1 (во что превращается сам элемент):';
+        const i2 = document.createElement('input');
+        i2.type = 'text';
+        i2.value = r.result;
+        i2.addEventListener('input', () => updateReaction(i, 'result', i2.value));
+
+        const t3 = document.createElement('label');
+        t3.textContent = 'elem2 (во что превращается второй элемент, пусто = исчезает):';
+        const i3 = document.createElement('input');
+        i3.type = 'text';
+        i3.value = r.result2;
+        i3.addEventListener('input', () => updateReaction(i, 'result2', i3.value));
+
+        const btn = document.createElement('button');
+        btn.className = 'danger';
+        btn.textContent = 'Удалить';
+        btn.onclick = () => removeReaction(i);
+
+        row.appendChild(t1);
+        row.appendChild(i1);
+        row.appendChild(t2);
+        row.appendChild(i2);
+        row.appendChild(t3);
+        row.appendChild(i3);
+        row.appendChild(btn);
         list.appendChild(row);
     });
 }
 
-// ===== СБОРКА КОДА =====
-function buildColorValue() {
-    if (colorMode === 'single') {
-        return `"${document.getElementById('elemColor').value}"`;
+// ============================================================
+// ГЕНЕРАЦИЯ КОДА
+// ============================================================
+function buildColorValue(el) {
+    if (el.colorMode === 'single') return `"${el.color}"`;
+    return `[${el.colors.map(c => `"${c}"`).join(', ')}]`;
+}
+
+function buildBehaviorValue(el) {
+    if (el.behavior.length === 1) return `behaviors.${el.behavior[0]}`;
+    return `[${el.behavior.map(b => `behaviors.${b}`).join(', ')}]`;
+}
+
+function buildElementCode(el, indent = '') {
+    let code = `${indent}elements.${el.name} = {\n`;
+    code += `${indent}    color: ${buildColorValue(el)},\n`;
+    code += `${indent}    category: "${escapeJS(el.category)}",\n`;
+    code += `${indent}    state: "${escapeJS(el.state)}",\n`;
+    code += `${indent}    behavior: ${buildBehaviorValue(el)},\n`;
+    code += `${indent}    desc: "${escapeJS(el.desc)}"`;
+
+    if (el.usePattern && el.colorPattern.length > 0) {
+        code += `,\n${indent}    colorPattern: [${el.colorPattern.map(c => `"${c}"`).join(', ')}]`;
     }
-    return `[${colors.map(c => `"${c}"`).join(', ')}]`;
+
+    if (el.reactions.length > 0) {
+        code += `,\n\n${indent}    reactions: {\n`;
+        el.reactions.forEach((r, i) => {
+            const comma = i < el.reactions.length - 1 ? ',' : '';
+            const target = r.target.trim() || 'water';
+            const elem1 = r.result.trim();
+            const elem2 = r.result2.trim();
+            const val1 = elem1 ? `"${escapeJS(elem1)}"` : 'null';
+            const val2 = elem2 ? `"${escapeJS(elem2)}"` : 'null';
+            code += `${indent}        "${escapeJS(target)}": { elem1: ${val1}, elem2: ${val2} }${comma}\n`;
+        });
+        code += `${indent}    }`;
+    }
+
+    // температурные переходы
+    const tempLines = [];
+    if (el.tempHigh !== '' && el.stateHigh) {
+        tempLines.push(`${indent}    tempHigh: ${Number(el.tempHigh)},`);
+        tempLines.push(`${indent}    stateHigh: "${escapeJS(el.stateHigh)}"`);
+    }
+    if (el.tempLow !== '' && el.stateLow) {
+        tempLines.push(`${indent}    tempLow: ${Number(el.tempLow)},`);
+        tempLines.push(`${indent}    stateLow: "${escapeJS(el.stateLow)}"`);
+    }
+    if (tempLines.length > 0) {
+        code += `,\n\n` + tempLines.join(',\n').replace(/,$/, '') + `\n`;
+    } else {
+        code += `\n`;
+    }
+
+    // доп. свойства
+    const extras = [];
+    if (el.burn !== '' && el.burn !== null) extras.push(`    burn: ${Number(el.burn)}`);
+    if (el.burnTime !== '' && el.burnTime !== null) extras.push(`    burnTime: ${Number(el.burnTime)}`);
+    if (el.fireColor) extras.push(`    fireColor: "${escapeJS(el.fireColor)}"`);
+    if (el.conduct) extras.push(`    conduct: true`);
+    if (el.hidden) extras.push(`    hidden: true`);
+    if (el.density !== '' && el.density !== null) extras.push(`    density: ${Number(el.density)}`);
+    if (el.hardness !== '' && el.hardness !== null) extras.push(`    hardness: ${Number(el.hardness)}`);
+    if (el.breakInto) extras.push(`    breakInto: "${escapeJS(el.breakInto)}"`);
+
+    if (extras.length > 0) {
+        code += `,\n${indent}    // дополнительные свойства\n${extras.map(l => indent + l).join(',\n')}\n`;
+    }
+
+    code += `${indent}};\n`;
+    return code;
 }
 
 function buildModCode() {
-    const name = document.getElementById('elemName').value.trim() || 'my_element';
-    const category = document.getElementById('elemCategory').value;
-    const state = document.getElementById('elemState').value;
-    const behavior = document.getElementById('elemBehavior').value;
-    const desc = document.getElementById('elemDesc').value;
-    const tempHigh = document.getElementById('tempHigh').value;
-    const stateHigh = document.getElementById('stateHigh').value;
-    const tempLow = document.getElementById('tempLow').value;
-    const stateLow = document.getElementById('stateLow').value;
+    if (elementsList.length === 0) return '// Нет элементов';
 
-    let code = `elements.${name} = {\n`;
-    code += `    color: ${buildColorValue()},\n`;
-    code += `    category: "${category}",\n`;
-    code += `    state: "${state}",\n`;
-    code += `    behavior: behaviors.${behavior},\n`;
-    code += `    desc: "${desc.replace(/"/g, '\\"')}"`;
-
-    if (reactions.length > 0) {
-        code += `,\n\n    reactions: {\n`;
-        reactions.forEach((r, i) => {
-            const comma = i < reactions.length - 1 ? ',' : '';
-            code += `        "${r.target}": { elem1: "${r.result}", elem2: null }${comma}\n`;
-        });
-        code += `    }`;
+    // проверка дубликатов
+    const names = elementsList.map(e => e.name);
+    const seen = new Set();
+    const dupes = names.filter(n => {
+        if (seen.has(n)) return true;
+        seen.add(n);
+        return false;
+    });
+    if (dupes.length > 0) {
+        return `// ⚠️ ОШИБКА: дубликаты имён: ${dupes.join(', ')}\n// Исправьте имена перед скачиванием.`;
     }
 
-    code += `,\n\n`;
-    code += `    tempHigh: ${tempHigh},\n`;
-    code += `    stateHigh: "${stateHigh}",\n`;
-    code += `    tempLow: ${tempLow},\n`;
-    code += `    stateLow: "${stateLow}"\n`;
-    code += `};\n`;
+    // проверка валидности
+    const invalid = elementsList.filter(e => !isValidName(e.name));
+    if (invalid.length > 0) {
+        return `// ⚠️ ОШИБКА: невалидные имена: ${invalid.map(e => e.name || '(пусто)').join(', ')}\n// Имя должно содержать только латиницу, цифры и _.`;
+    }
+
+    // автосортировка: элемент, на который ссылаются реакции, должен идти раньше
+    const sorted = [...elementsList];
+    sorted.sort((a, b) => {
+        const aRefs = a.reactions.some(r => r.target === b.name);
+        const bRefs = b.reactions.some(r => r.target === a.name);
+        if (aRefs && !bRefs) return 1;
+        if (bRefs && !aRefs) return -1;
+        return 0;
+    });
+
+    let header = `// Сгенерировано Sandboxels Mod Constructor v2\n`;
+    header += `// Элементов: ${sorted.length}\n`;
+    header += `// Дата: ${new Date().toLocaleString('ru-RU')}\n\n`;
+
+    let code = header;
+    sorted.forEach(el => {
+        code += buildElementCode(el);
+        code += '\n';
+    });
 
     return code;
 }
@@ -324,28 +859,51 @@ function updatePreview() {
     document.getElementById('preview').textContent = buildModCode();
 }
 
+// ============================================================
+// ЭКСПОРТ / ИМПОРТ
+// ============================================================
 function downloadMod() {
     const code = buildModCode();
-    const name = document.getElementById('elemName').value.trim() || 'my_element';
-    const blob = new Blob([code], { type: 'text/javascript' });
+    if (code.startsWith('// ⚠️ ОШИБКА')) {
+        document.getElementById('globalError').textContent = 'Исправьте ошибки перед скачиванием.';
+        return;
+    }
+    document.getElementById('globalError').textContent = '';
+
+    const name = elementsList[0]?.name || 'mod';
+    const blob = new Blob([code], { type: 'text/javascript;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${name}_mod.js`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function copyCode() {
+    const code = buildModCode();
+    navigator.clipboard.writeText(code).then(() => {
+        const status = document.getElementById('copyStatus');
+        status.textContent = '✅ Код скопирован!';
+        setTimeout(() => status.textContent = '', 2000);
+    }).catch(() => {
+        document.getElementById('copyStatus').textContent = '❌ Не удалось скопировать';
+    });
+}
+
+function exportJSON() {
+    const data = JSON.stringify(elementsList, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sandboxels_project.json';
     a.click();
     URL.revokeObjectURL(url);
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ =====
-document.querySelectorAll('input, select, textarea').forEach(el => {
-    el.addEventListener('input', updatePreview);
-    el.addEventListener('change', updatePreview);
-});
-
-renderColors();
-renderReactions();
-updatePreview();
-</script>
-
-</body>
-</html>
+function importJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
