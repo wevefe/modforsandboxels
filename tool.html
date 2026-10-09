@@ -907,3 +907,30 @@ function exportJSON() {
 function importJSON(event) {
     const file = event.target.files[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!Array.isArray(data) || data.length === 0) throw new Error('Пустой файл');
+            elementsList = data.map(el => Object.assign(createDefaultElement(), el));
+            activeIndex = 0;
+            renderTabs();
+            renderEditor();
+            updatePreview();
+            document.getElementById('globalError').textContent = '';
+        } catch (err) {
+            document.getElementById('globalError').textContent = 'Ошибка импорта: ' + err.message;
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+addElement();
+</script>
+
+</body>
+</html>
