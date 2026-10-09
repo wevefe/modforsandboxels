@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Sandboxels Mod Constructor</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        font-family: system-ui, sans-serif;
+        background: #1e1e2e;
+        color: #e0e0e0;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 { color: #89b4fa; margin-top: 0; }
+    .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .panel {
+        background: #2a2a3e;
+        border-radius: 8px;
+        padding: 16px;
+    }
+    label {
+        display: block;
+        margin-top: 12px;
+        margin-bottom: 4px;
+        font-size: 14px;
+        color: #a6adc8;
+    }
+    input[type="text"], input[type="number"], select, textarea {
+        width: 100%;
+        padding: 8px;
+        background: #1e1e2e;
+        border: 1px solid #45475a;
+        border-radius: 4px;
+        color: #e0e0e0;
+        font-family: inherit;
+    }
+    input[type="color"] {
+        width: 60px;
+        height: 36px;
+        border: none;
+        background: none;
+        cursor: pointer;
+    }
+    button {
+        background: #89b4fa;
+        color: #1e1e2e;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+    button:hover { background: #b4befe; }
+    button.danger { background: #f38ba8; }
+    button.danger:hover { background: #eba0ac; }
+    button.download {
+        background: #a6e3a1;
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        margin-top: 20px;
+    }
+    .color-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .reaction-row {
+        background: #1e1e2e;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
+    .reaction-row input { margin-bottom: 6px; }
+    pre {
+        background: #11111b;
+        padding: 12px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 12px;
+        color: #a6e3a1;
+        max-height: 600px;
+    }
+    .toggle-group {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+    }
+    .toggle-group button {
+        flex: 1;
+        background: #45475a;
+        color: #e0e0e0;
+    }
+    .toggle-group button.active {
+        background: #89b4fa;
+        color: #1e1e2e;
+    }
+</style>
+</head>
+<body>
+
+<h1>🧪 Sandboxels Mod Constructor</h1>
+
+<div class="container">
+    <!-- ЛЕВАЯ ПАНЕЛЬ: форма -->
+    <div class="panel">
+        <h2>Свойства элемента</h2>
+
+        <label>Имя элемента (латиницей, без пробелов)</label>
+        <input type="text" id="elemName" value="my_element" placeholder="my_element">
+
+        <label>Категория</label>
+        <select id="elemCategory">
+            <option value="land">land</option>
+            <option value="liquids">liquids</option>
+            <option value="gases">gases</option>
+            <option value="powders">powders</option>
+            <option value="solids">solids</option>
+            <option value="special">special</option>
+            <option value="machines">machines</option>
+            <option value="tools">tools</option>
+            <option value="weapons">weapons</option>
+            <option value="life">life</option>
+        </select>
+
+        <label>Состояние (state)</label>
+        <select id="elemState">
+            <option value="solid">solid</option>
+            <option value="liquid">liquid</option>
+            <option value="gas">gas</option>
+        </select>
+
+        <label>Поведение (behavior)</label>
+        <select id="elemBehavior">
+            <option value="POWDER">POWDER</option>
+            <option value="LIQUID">LIQUID</option>
+            <option value="GAS">GAS</option>
+            <option value="WALL">WALL</option>
+            <option value="SUPPORT">SUPPORT</option>
+            <option value="STURDYPOWDER">STURDYPOWDER</option>
+            <option value="MUD">MUD</option>
+            <option value="CLIMB">CLIMB</option>
+            <option value="SAND">SAND</option>
+            <option value="SANDLIKE">SANDLIKE</option>
+            <option value="none">none</option>
+        </select>
+
+        <label>Описание (desc)</label>
+        <textarea id="elemDesc" rows="2">A custom element.</textarea>
+
+        <h3>🎨 Цвет</h3>
+        <div class="toggle-group">
+            <button id="colorModeSingle" class="active" onclick="setColorMode('single')">Один цвет</button>
+            <button id="colorModeArray" onclick="setColorMode('array')">Массив цветов</button>
+        </div>
+
+        <div id="singleColorBlock">
+            <label>Цвет</label>
+            <input type="color" id="elemColor" value="#ff0000">
+        </div>
+
+        <div id="arrayColorBlock" style="display:none;">
+            <label>Цвета (каждый добавляется как отдельный оттенок)</label>
+            <div id="colorsList"></div>
+            <button onclick="addColor()">+ Добавить цвет</button>
+        </div>
+
+        <h3>🌡️ Температурные переходы</h3>
+
+        <label>tempHigh (нагрев выше)</label>
+        <input type="number" id="tempHigh" value="1000">
+
+        <label>stateHigh (во что превращается)</label>
+        <input type="text" id="stateHigh" value="molten_glass">
+
+        <label>tempLow (охлаждение ниже)</label>
+        <input type="number" id="tempLow" value="-50">
+
+        <label>stateLow (во что превращается)</label>
+        <input type="text" id="stateLow" value="ice">
+
+        <h3>⚗️ Реакции</h3>
+        <div id="reactionsList"></div>
+        <button onclick="addReaction()">+ Добавить реакцию</button>
+
+        <button class="download" onclick="downloadMod()">💾 Скачать мод (.js)</button>
+    </div>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ: предпросмотр -->
+    <div class="panel">
+        <h2>Предпросмотр кода</h2>
+        <pre id="preview">// Здесь появится код мода</pre>
+    </div>
+</div>
+
+<script>
+// ===== СОСТОЯНИЕ =====
+let colorMode = 'single';
+let colors = ['#ff0000'];
+let reactions = [];
+
+// ===== ЦВЕТ =====
+function setColorMode(mode) {
+    colorMode = mode;
+    document.getElementById('colorModeSingle').classList.toggle('active', mode === 'single');
+    document.getElementById('colorModeArray').classList.toggle('active', mode === 'array');
+    document.getElementById('singleColorBlock').style.display = mode === 'single' ? 'block' : 'none';
+    document.getElementById('arrayColorBlock').style.display = mode === 'array' ? 'block' : 'none';
+    updatePreview();
+}
+
+function addColor() {
+    colors.push('#ffffff');
+    renderColors();
+    updatePreview();
+}
+
+function removeColor(index) {
+    colors.splice(index, 1);
+    if (colors.length === 0) colors.push('#ffffff');
+    renderColors();
+    updatePreview();
+}
+
+function renderColors() {
+    const list = document.getElementById('colorsList');
+    list.innerHTML = '';
+    colors.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.className = 'color-row';
+        row.innerHTML = `
+            <input type="color" value="${c}" onchange="colors[${i}] = this.value; updatePreview();">
+            <button class="danger" onclick="removeColor(${i})">×</button>
+        `;
+        list.appendChild(row);
+    });
+}
+
+// ===== РЕАКЦИИ =====
+function addReaction() {
+    reactions.push({ target: 'water', result: 'mud' });
+    renderReactions();
+    updatePreview();
+}
+
+function removeReaction(index) {
+    reactions.splice(index, 1);
+    renderReactions();
+    updatePreview();
+}
+
+function renderReactions() {
+    const list = document.getElementById('reactionsList');
+    list.innerHTML = '';
+    reactions.forEach((r, i) => {
+        const row = document.createElement('div');
+        row.className = 'reaction-row';
+        row.innerHTML = `
+            <label>Реагирует с:</label>
+            <input type="text" value="${r.target}" oninput="reactions[${i}].target = this.value; updatePreview();">
+            <label>Превращается в (elem1):</label>
+            <input type="text" value="${r.result}" oninput="reactions[${i}].result = this.value; updatePreview();">
+            <button class="danger" onclick="removeReaction(${i})">Удалить</button>
+        `;
+        list.appendChild(row);
+    });
+}
+
+// ===== СБОРКА КОДА =====
+function buildColorValue() {
+    if (colorMode === 'single') {
+        return `"${document.getElementById('elemColor').value}"`;
+    }
+    return `[${colors.map(c => `"${c}"`).join(', ')}]`;
+}
+
+function buildModCode() {
+    const name = document.getElementById('elemName').value.trim() || 'my_element';
+    const category = document.getElementById('elemCategory').value;
+    const state = document.getElementById('elemState').value;
+    const behavior = document.getElementById('elemBehavior').value;
+    const desc = document.getElementById('elemDesc').value;
+    const tempHigh = document.getElementById('tempHigh').value;
+    const stateHigh = document.getElementById('stateHigh').value;
+    const tempLow = document.getElementById('tempLow').value;
+    const stateLow = document.getElementById('stateLow').value;
+
+    let code = `elements.${name} = {\n`;
+    code += `    color: ${buildColorValue()},\n`;
+    code += `    category: "${category}",\n`;
+    code += `    state: "${state}",\n`;
+    code += `    behavior: behaviors.${behavior},\n`;
+    code += `    desc: "${desc.replace(/"/g, '\\"')}"`;
+
+    if (reactions.length > 0) {
+        code += `,\n\n    reactions: {\n`;
+        reactions.forEach((r, i) => {
+            const comma = i < reactions.length - 1 ? ',' : '';
+            code += `        "${r.target}": { elem1: "${r.result}", elem2: null }${comma}\n`;
+        });
+        code += `    }`;
+    }
+
+    code += `,\n\n`;
+    code += `    tempHigh: ${tempHigh},\n`;
+    code += `    stateHigh: "${stateHigh}",\n`;
+    code += `    tempLow: ${tempLow},\n`;
+    code += `    stateLow: "${stateLow}"\n`;
+    code += `};\n`;
+
+    return code;
+}
+
+function updatePreview() {
+    document.getElementById('preview').textContent = buildModCode();
+}
+
+function downloadMod() {
+    const code = buildModCode();
+    const name = document.getElementById('elemName').value.trim() || 'my_element';
+    const blob = new Blob([code], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}_mod.js`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('input', updatePreview);
+    el.addEventListener('change', updatePreview);
+});
+
+renderColors();
+renderReactions();
+updatePreview();
+</script>
+
+</body>
+</html>
