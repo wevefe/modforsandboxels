@@ -919,17 +919,17 @@ function buildElementCode(el, indent = '') {
     code += `${indent}    behavior: ${buildBehaviorValue(el)},\n`;
     code += `${indent}    desc: "${escapeJS(el.desc)}"`;
 
-    if (el.usePattern && el.colorPattern.length > 0) {
+    if (el.usePattern && el.colorPattern && el.colorPattern.length > 0) {
         code += `,\n${indent}    colorPattern: [${el.colorPattern.map(c => `"${c}"`).join(', ')}]`;
     }
 
-    if (el.reactions.length > 0) {
+    if (el.reactions && el.reactions.length > 0) {
         code += `,\n\n${indent}    reactions: {\n`;
         el.reactions.forEach((r, i) => {
             const comma = i < el.reactions.length - 1 ? ',' : '';
-            const target = r.target.trim() || 'water';
-            const elem1 = r.result.trim();
-            const elem2 = r.result2.trim();
+            const target = (r.target || '').trim() || 'water';
+            const elem1 = (r.result || '').trim();
+            const elem2 = (r.result2 || '').trim();
             const val1 = elem1 ? `"${escapeJS(elem1)}"` : 'null';
             const val2 = elem2 ? `"${escapeJS(elem2)}"` : 'null';
             code += `${indent}        "${escapeJS(target)}": { elem1: ${val1}, elem2: ${val2} }${comma}\n`;
@@ -937,36 +937,36 @@ function buildElementCode(el, indent = '') {
         code += `${indent}    }`;
     }
 
-    const tempLines = [];
-    if (el.tempHigh !== '' && el.stateHigh) {
-        tempLines.push(`${indent}    tempHigh: ${Number(el.tempHigh)},`);
-        tempLines.push(`${indent}    stateHigh: "${escapeJS(el.stateHigh)}"`);
+    // Температурные переходы — генерируем парами, разделяем запятыми корректно
+    const tempPairs = [];
+    if (el.tempHigh !== '' && el.tempHigh !== null && el.stateHigh) {
+        tempPairs.push(`tempHigh: ${Number(el.tempHigh)}`);
+        tempPairs.push(`stateHigh: "${escapeJS(el.stateHigh)}"`);
     }
-    if (el.tempLow !== '' && el.stateLow) {
-        tempLines.push(`${indent}    tempLow: ${Number(el.tempLow)},`);
-        tempLines.push(`${indent}    stateLow: "${escapeJS(el.stateLow)}"`);
+    if (el.tempLow !== '' && el.tempLow !== null && el.stateLow) {
+        tempPairs.push(`tempLow: ${Number(el.tempLow)}`);
+        tempPairs.push(`stateLow: "${escapeJS(el.stateLow)}"`);
     }
-    if (tempLines.length > 0) {
-        code += `,\n\n` + tempLines.join(',\n').replace(/,$/, '') + `\n`;
-    } else {
-        code += `\n`;
+    if (tempPairs.length > 0) {
+        code += `,\n\n${indent}    ${tempPairs.join(`,\n${indent}    `)}`;
     }
 
     const extras = [];
-    if (el.burn !== '' && el.burn !== null) extras.push(`    burn: ${Number(el.burn)}`);
-    if (el.burnTime !== '' && el.burnTime !== null) extras.push(`    burnTime: ${Number(el.burnTime)}`);
-    if (el.fireColor) extras.push(`    fireColor: "${escapeJS(el.fireColor)}"`);
-    if (el.conduct) extras.push(`    conduct: true`);
-    if (el.hidden) extras.push(`    hidden: true`);
-    if (el.density !== '' && el.density !== null) extras.push(`    density: ${Number(el.density)}`);
-    if (el.hardness !== '' && el.hardness !== null) extras.push(`    hardness: ${Number(el.hardness)}`);
-    if (el.breakInto) extras.push(`    breakInto: "${escapeJS(el.breakInto)}"`);
+    if (el.burn !== '' && el.burn !== null) extras.push(`burn: ${Number(el.burn)}`);
+    if (el.burnTime !== '' && el.burnTime !== null) extras.push(`burnTime: ${Number(el.burnTime)}`);
+    if (el.fireColor) extras.push(`fireColor: "${escapeJS(el.fireColor)}"`);
+    if (el.conduct) extras.push(`conduct: true`);
+    if (el.hidden) extras.push(`hidden: true`);
+    if (el.density !== '' && el.density !== null) extras.push(`density: ${Number(el.density)}`);
+    if (el.hardness !== '' && el.hardness !== null) extras.push(`hardness: ${Number(el.hardness)}`);
+    if (el.breakInto) extras.push(`breakInto: "${escapeJS(el.breakInto)}"`);
 
     if (extras.length > 0) {
-        code += `,\n${indent}    // дополнительные свойства\n${extras.map(l => indent + l).join(',\n')}\n`;
+        code += `,\n${indent}    // дополнительные свойства\n`;
+        code += extras.map(l => `${indent}    ${l}`).join(',\n');
     }
 
-    code += `${indent}};\n`;
+    code += `\n${indent}};\n`;
     return code;
 }
 
@@ -992,6 +992,11 @@ function buildModCode() {
     const invalidCats = elementsList.filter(e => e.category && !isValidCategory(e.category));
     if (invalidCats.length > 0) {
         return `// ⚠️ ОШИБКА: невалидные категории: ${invalidCats.map(e => e.category).join(', ')}\n// Категория должна содержать только латиницу, цифры и _.`;
+    }
+
+    const invalidBehavior = elementsList.filter(e => !Array.isArray(e.behavior) || e.behavior.length === 0);
+    if (invalidBehavior.length > 0) {
+        return `// ⚠️ ОШИБКА: у элементов не задано поведение: ${invalidBehavior.map(e => e.name).join(', ')}`;
     }
 
     const sorted = [...elementsList];
@@ -1096,11 +1101,55 @@ function importJSON(event) {
 
             if (elems.length === 0) throw new Error('Пустой файл');
 
-            elementsList = elems.map(el => Object.assign(createDefaultElement(), el));
-            // Валидация и загрузка кастомных категорий
+            // Нормализация каждого элемента через дефолт — защита от отсутствующих полей
+            elementsList = elems.map(el => {
+                const merged = Object.assign(createDefaultElement(), el);
+
+                // Гарантируем корректные массивы
+                if (!Array.isArray(merged.behavior) || merged.behavior.length === 0) {
+                    merged.behavior = ['POWDER'];
+                }
+                if (!Array.isArray(merged.colors) || merged.colors.length === 0) {
+                    merged.colors = ['#ffffff'];
+                }
+                if (!Array.isArray(merged.colorPattern)) {
+                    merged.colorPattern = [];
+                }
+                if (!Array.isArray(merged.reactions)) {
+                    merged.reactions = [];
+                }
+
+                // Нормализуем реакции
+                merged.reactions = merged.reactions.map(r => ({
+                    target: r && r.target ? String(r.target) : 'water',
+                    result: r && r.result ? String(r.result) : '',
+                    result2: r && r.result2 ? String(r.result2) : ''
+                }));
+
+                // Валидируем state
+                if (!STATES.includes(merged.state)) {
+                    merged.state = 'solid';
+                }
+
+                // Валидируем colorMode
+                if (merged.colorMode !== 'single' && merged.colorMode !== 'array') {
+                    merged.colorMode = 'single';
+                }
+
+                return merged;
+            });
+
+            // Дедупликация кастомных категорий
+            const seenCats = new Set();
             customCategories = cats
                 .map(c => String(c).trim())
-                .filter(c => c && isValidCategory(c) && !DEFAULT_CATEGORIES.includes(c));
+                .filter(c => {
+                    if (!c || !isValidCategory(c)) return false;
+                    if (DEFAULT_CATEGORIES.includes(c)) return false;
+                    if (seenCats.has(c)) return false;
+                    seenCats.add(c);
+                    return true;
+                });
 
             activeIndex = 0;
             renderTabs();
