@@ -1,6 +1,10 @@
-elements.new_element = {
-    color: "#ffff00",
-    behavior: behaviors.LIQUID,
-    category: "liquids",
-    state: "liquid"
-}
+elements["fire_test"] = {
+    name: "test fire",
+    color: "#ff6600",
+    category: "energy",
+    state: "gas",
+    behavior: behaviors.FIRE,
+    reactions: {
+        "water": { "elem1": "steam", "chance": 1.0 }
+    }
+};
