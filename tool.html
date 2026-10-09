@@ -180,6 +180,50 @@
     }
     .checkbox-row input { width: auto; }
     .checkbox-row label { margin: 0; }
+
+    /* Кастомные категории */
+    .category-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+    .category-row input { flex: 1; }
+    .category-hint {
+        font-size: 11px;
+        color: #6c7086;
+        margin-top: 2px;
+    }
+    .custom-cat-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+    }
+    .custom-cat-chip {
+        background: #45475a;
+        color: #e0e0e0;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    .custom-cat-chip:hover { border-color: #89b4fa; }
+    .custom-cat-chip.active {
+        background: #89b4fa;
+        color: #1e1e2e;
+    }
+    .custom-cat-chip .remove {
+        color: #f38ba8;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 0 2px;
+    }
+    .custom-cat-chip.active .remove { color: #1e1e2e; }
 </style>
 </head>
 <body>
@@ -221,14 +265,23 @@
 let elementsList = [];
 let activeIndex = 0;
 
+// Кастомные категории, добавленные пользователем
+let customCategories = [];
+
+const DEFAULT_CATEGORIES = [
+    'land', 'liquids', 'gases', 'powders', 'solids', 'special',
+    'machines', 'tools', 'weapons', 'life', 'food', 'structures'
+];
+
+// Возвращает объединённый список категорий (дефолтные + кастомные)
+function getAllCategories() {
+    const set = new Set([...DEFAULT_CATEGORIES, ...customCategories]);
+    return Array.from(set);
+}
+
 const BEHAVIORS = [
     'POWDER', 'LIQUID', 'GAS', 'WALL', 'SUPPORT', 'STURDYPOWDER',
     'MUD', 'CLIMB', 'SAND', 'SANDLIKE', 'NONE'
-];
-
-const CATEGORIES = [
-    'land', 'liquids', 'gases', 'powders', 'solids', 'special',
-    'machines', 'tools', 'weapons', 'life', 'food', 'structures'
 ];
 
 const STATES = ['solid', 'liquid', 'gas'];
@@ -256,6 +309,36 @@ function isValidName(name) {
     return /^[a-z_][a-z0-9_]*$/i.test(name);
 }
 
+function isValidCategory(name) {
+    // Категория: латиница/цифры/_ (без пробелов)
+    return /^[a-z_][a-z0-9_]*$/i.test(name);
+}
+
+// ============================================================
+// УПРАВЛЕНИЕ КАТЕГОРИЯМИ
+// ============================================================
+function addCustomCategory(name) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return false;
+    if (!isValidCategory(trimmed)) return false;
+    if (DEFAULT_CATEGORIES.includes(trimmed)) return false;
+    if (customCategories.includes(trimmed)) return false;
+    customCategories.push(trimmed);
+    return true;
+}
+
+function removeCustomCategory(name) {
+    const idx = customCategories.indexOf(name);
+    if (idx === -1) return;
+    customCategories.splice(idx, 1);
+    // Если у элементов была эта категория — сбрасываем на 'land'
+    elementsList.forEach(el => {
+        if (el.category === name) el.category = 'land';
+    });
+    renderEditor();
+    updatePreview();
+}
+
 // ============================================================
 // УПРАВЛЕНИЕ ЭЛЕМЕНТАМИ
 // ============================================================
@@ -276,7 +359,6 @@ function createDefaultElement() {
         stateHigh: 'molten_glass',
         tempLow: -50,
         stateLow: 'ice',
-        // доп. свойства
         burn: '',
         burnTime: '',
         fireColor: '',
@@ -335,6 +417,9 @@ function getElementErrors(el, index) {
         const dup = elementsList.findIndex((e, i) => i !== index && e.name === el.name);
         if (dup !== -1) errors.push('Дубликат имени');
     }
+    if (el.category && !isValidCategory(el.category)) {
+        errors.push('Категория: только латиница, цифры и _');
+    }
     return errors;
 }
 
@@ -362,6 +447,8 @@ function renderEditor() {
     if (!el) return;
     const editor = document.getElementById('editor');
 
+    const allCats = getAllCategories();
+
     editor.innerHTML = `
         <h2>Свойства элемента</h2>
 
@@ -369,11 +456,21 @@ function renderEditor() {
         <input type="text" id="f_name" value="${escapeHTML(el.name)}">
         <div id="nameError" class="error"></div>
 
-        <label>Категория</label>
-        <select id="f_category">
-            ${CATEGORIES.map(c => `<option value="${c}"${el.category === c ? ' selected' : ''}>${c}</option>`).join('')}
-        </select>
+        <h3>📂 Категория</h3>
+        <label>Выберите или введите свою категорию</label>
+        <input type="text" id="f_category" list="categoriesDatalist"
+               value="${escapeHTML(el.category)}"
+               placeholder="например: my_category">
+        <datalist id="categoriesDatalist">
+            ${allCats.map(c => `<option value="${escapeHTML(c)}"></option>`).join('')}
+        </datalist>
+        <div class="category-hint">Можно выбрать из списка или ввести новую (латиница, цифры, _)</div>
+        <div id="categoryError" class="error"></div>
 
+        <label>Быстрый выбор:</label>
+        <div class="custom-cat-list" id="categoryChips"></div>
+
+        <h3>⚙️ Основные свойства</h3>
         <label>Состояние (state)</label>
         <select id="f_state">
             ${STATES.map(s => `<option value="${s}"${el.state === s ? ' selected' : ''}>${s}</option>`).join('')}
@@ -468,10 +565,49 @@ function renderEditor() {
 
     bindInputs();
     renderBehaviors();
+    renderCategoryChips();
     if (el.colorMode === 'array') renderColors();
     if (el.usePattern) renderPatterns();
     renderReactions();
     validateName();
+    validateCategory();
+}
+
+// ============================================================
+// ЧИПЫ КАТЕГОРИЙ
+// ============================================================
+function renderCategoryChips() {
+    const el = elementsList[activeIndex];
+    const container = document.getElementById('categoryChips');
+    if (!container) return;
+    container.innerHTML = '';
+
+    getAllCategories().forEach(cat => {
+        const chip = document.createElement('span');
+        chip.className = 'custom-cat-chip' + (el.category === cat ? ' active' : '');
+        chip.textContent = cat;
+
+        // Кнопка удаления — только для кастомных категорий
+        if (customCategories.includes(cat)) {
+            const remove = document.createElement('span');
+            remove.className = 'remove';
+            remove.textContent = '×';
+            remove.title = 'Удалить категорию';
+            remove.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`Удалить категорию "${cat}"? Элементы с ней станут "land".`)) {
+                    removeCustomCategory(cat);
+                }
+            };
+            chip.appendChild(remove);
+        }
+
+        chip.onclick = () => {
+            updateActive('category', cat);
+            renderEditor();
+        };
+        container.appendChild(chip);
+    });
 }
 
 // ============================================================
@@ -514,6 +650,20 @@ function bindInputs() {
 
     const nameInput = document.getElementById('f_name');
     if (nameInput) nameInput.addEventListener('input', validateName);
+
+    const catInput = document.getElementById('f_category');
+    if (catInput) {
+        // При вводе новой категории — автоматически добавляем её в список
+        catInput.addEventListener('change', () => {
+            const val = catInput.value.trim();
+            if (val && isValidCategory(val) && !DEFAULT_CATEGORIES.includes(val) && !customCategories.includes(val)) {
+                addCustomCategory(val);
+                renderCategoryChips();
+            }
+            validateCategory();
+        });
+        catInput.addEventListener('input', validateCategory);
+    }
 }
 
 function validateName() {
@@ -523,6 +673,17 @@ function validateName() {
     const errors = getElementErrors(el, activeIndex);
     errNode.textContent = errors.join(' • ');
     renderTabs();
+}
+
+function validateCategory() {
+    const el = elementsList[activeIndex];
+    const errNode = document.getElementById('categoryError');
+    if (!errNode || !el) return;
+    if (el.category && !isValidCategory(el.category)) {
+        errNode.textContent = 'Категория: только латиница, цифры и _ (без пробелов)';
+    } else {
+        errNode.textContent = '';
+    }
 }
 
 // ============================================================
@@ -776,7 +937,6 @@ function buildElementCode(el, indent = '') {
         code += `${indent}    }`;
     }
 
-    // температурные переходы
     const tempLines = [];
     if (el.tempHigh !== '' && el.stateHigh) {
         tempLines.push(`${indent}    tempHigh: ${Number(el.tempHigh)},`);
@@ -792,7 +952,6 @@ function buildElementCode(el, indent = '') {
         code += `\n`;
     }
 
-    // доп. свойства
     const extras = [];
     if (el.burn !== '' && el.burn !== null) extras.push(`    burn: ${Number(el.burn)}`);
     if (el.burnTime !== '' && el.burnTime !== null) extras.push(`    burnTime: ${Number(el.burnTime)}`);
@@ -814,7 +973,6 @@ function buildElementCode(el, indent = '') {
 function buildModCode() {
     if (elementsList.length === 0) return '// Нет элементов';
 
-    // проверка дубликатов
     const names = elementsList.map(e => e.name);
     const seen = new Set();
     const dupes = names.filter(n => {
@@ -826,13 +984,16 @@ function buildModCode() {
         return `// ⚠️ ОШИБКА: дубликаты имён: ${dupes.join(', ')}\n// Исправьте имена перед скачиванием.`;
     }
 
-    // проверка валидности
     const invalid = elementsList.filter(e => !isValidName(e.name));
     if (invalid.length > 0) {
         return `// ⚠️ ОШИБКА: невалидные имена: ${invalid.map(e => e.name || '(пусто)').join(', ')}\n// Имя должно содержать только латиницу, цифры и _.`;
     }
 
-    // автосортировка: элемент, на который ссылаются реакции, должен идти раньше
+    const invalidCats = elementsList.filter(e => e.category && !isValidCategory(e.category));
+    if (invalidCats.length > 0) {
+        return `// ⚠️ ОШИБКА: невалидные категории: ${invalidCats.map(e => e.category).join(', ')}\n// Категория должна содержать только латиницу, цифры и _.`;
+    }
+
     const sorted = [...elementsList];
     sorted.sort((a, b) => {
         const aRefs = a.reactions.some(r => r.target === b.name);
@@ -845,6 +1006,11 @@ function buildModCode() {
     let header = `// Сгенерировано Sandboxels Mod Constructor v2\n`;
     header += `// Элементов: ${sorted.length}\n`;
     header += `// Дата: ${new Date().toLocaleString('ru-RU')}\n\n`;
+
+    // Комментарий со списком кастомных категорий
+    if (customCategories.length > 0) {
+        header += `// Кастомные категории: ${customCategories.join(', ')}\n\n`;
+    }
 
     let code = header;
     sorted.forEach(el => {
@@ -894,7 +1060,11 @@ function copyCode() {
 }
 
 function exportJSON() {
-    const data = JSON.stringify(elementsList, null, 2);
+    // Сохраняем и элементы, и кастомные категории
+    const data = JSON.stringify({
+        elements: elementsList,
+        customCategories: customCategories
+    }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -911,8 +1081,27 @@ function importJSON(event) {
     reader.onload = e => {
         try {
             const data = JSON.parse(e.target.result);
-            if (!Array.isArray(data) || data.length === 0) throw new Error('Пустой файл');
-            elementsList = data.map(el => Object.assign(createDefaultElement(), el));
+
+            // Поддержка старого формата (просто массив) и нового (объект)
+            let elems, cats;
+            if (Array.isArray(data)) {
+                elems = data;
+                cats = [];
+            } else if (data && Array.isArray(data.elements)) {
+                elems = data.elements;
+                cats = Array.isArray(data.customCategories) ? data.customCategories : [];
+            } else {
+                throw new Error('Неизвестный формат файла');
+            }
+
+            if (elems.length === 0) throw new Error('Пустой файл');
+
+            elementsList = elems.map(el => Object.assign(createDefaultElement(), el));
+            // Валидация и загрузка кастомных категорий
+            customCategories = cats
+                .map(c => String(c).trim())
+                .filter(c => c && isValidCategory(c) && !DEFAULT_CATEGORIES.includes(c));
+
             activeIndex = 0;
             renderTabs();
             renderEditor();
